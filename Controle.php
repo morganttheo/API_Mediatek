@@ -60,7 +60,16 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function delete($table, $champs){
-        $result = $this->accessBDD->delete($table, $champs);	
+        $result = null;
+        
+        if ($table == "commandedocument"){
+            $result = $this->accessBDD->deleteCommande($champs);
+            echo "Champs : 1";
+            var_dump($champs);
+        }else{
+            $result = $this->accessBDD->delete($table, $champs);
+        }
+        
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
         }else{	
@@ -74,7 +83,13 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function post($table, $champs){
-        $result = $this->accessBDD->insertOne($table, $champs);	
+        $result = null;
+        if($table == "commandedocument") {
+            $result = $this->accessBDD->insertCommande($champs);
+        }
+        else{
+            $result = $this->accessBDD->insertOne($table, $champs);
+        }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
         }else{	
@@ -89,7 +104,14 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function put($table, $id, $champs){
-        $result = $this->accessBDD->updateOne($table, $id, $champs);	
+        $result = null;
+        if($table == "commandedocument") {
+            $result = $this->accessBDD->updateCommande($id, $champs);
+        }
+        else{
+            $result = $this->accessBDD->updateOne($table, $id, $champs);
+        }
+        	
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
         }else{	

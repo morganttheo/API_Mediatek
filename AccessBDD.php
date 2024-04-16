@@ -38,6 +38,8 @@ class AccessBDD {
                     return $this->selectAllDvd();
                 case "revue" :
                     return $this->selectAllRevues();
+                case "maxcommande" :
+                    return $this->selectMaxCommande();
                 case "exemplaire" :
                     return $this->selectExemplairesRevue();
                 case "genre" :
@@ -175,7 +177,7 @@ class AccessBDD {
         return $this->conn->query($req, $param);
     }	
     
-       /**
+     /**
      * récupération de toutes les commandes d'une dvd_livre
      * @param string $idLivreDvd id du livre_dvd
      * @return lignes de la requete
@@ -185,10 +187,22 @@ class AccessBDD {
                 "idLivreDvd" => $idLivreDvd
         );
         $req = "Select cd.id, c.dateCommande, c.montant, cd.nbExemplaire, cd.idLivreDvd, ";
+        $req .= "cd.idSuivi, s.etat ";
         $req .= "from commandedocument cd join commande c on cd.id=c.id ";
+        $req .= "join suivi s on cd.idSuivi=s.id ";
         $req .= "where cd.idLivreDvd = :idLivreDvd ";
         $req .= "order by c.dateCommande DESC";	
         return $this->conn->query($req, $param);
+    }
+    
+    /**
+     * Retourne la plus grande id de la table commande
+     *
+     * @return lignes de la requete 
+     */
+    public function selectMaxCommande(){
+        $req = "Select MAX(id) AS id FROM commande";
+        return $this->conn->query($req);
     }
     /**
      * suppresion d'une ou plusieurs lignes dans une table
@@ -209,6 +223,25 @@ class AccessBDD {
         }else{
             return null;
         }
+    }
+    /**
+     * Suppresion de l'entitée composée commandeDocument dans la bdd
+     *
+     * @param [type] $champs nom et valeur de chaque champs de la ligne
+     * @return true si l'ajout a fonctionné
+     */
+    public function deleteCommande($champs){
+        
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["idCD"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->delete("commande", $champsCommande);
+        
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->delete( "commandedocument", $champsCommandeDocument);
     }
 
     /**
@@ -238,6 +271,26 @@ class AccessBDD {
             return null;
         }
     }
+    
+     /**
+     * Ajout de l'entitée composée commandeDocument dans la bdd
+     *
+     * @param [type] $champs nom et valeur de chaque champs de la ligne
+     * @return true si l'ajout a fonctionné
+     */
+    public function insertCommande($champs)
+    {
+        
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["Id"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->insertOne("commande", $champsCommande);
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->insertOne( "commandedocument", $champsCommandeDocument);
+    }
 
     /**
      * modification d'une ligne dans une table
@@ -246,7 +299,7 @@ class AccessBDD {
      * @param array $param nom et valeur de chaque champs de la ligne
      * @return true si la modification a fonctionné
      */	
-    public function updateOne($table, $id, $champs){
+    public function updateOne($table, $id, $champs, $numero = null){
         if($this->conn != null && $champs != null){
             // construction de la requête
             $requete = "update $table set ";
@@ -256,11 +309,30 @@ class AccessBDD {
             // (enlève la dernière virgule)
             $requete = substr($requete, 0, strlen($requete)-1);				
             $champs["id"] = $id;
-            $requete .= " where id=:id;";				
+            $requete .= " where id=:id;";	
+            if($numero != null)
+            {
+                $requete = substr($requete, 0, strlen($requete)-1);				
+                $champs["numero"] = $numero;
+                $requete .= " and numero=:numero;";
+            }	
             return $this->conn->execute($requete, $champs);		
         }else{
             return null;
         }
+    }
+    public function updateCommande($id, $champs)
+    {
+        
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["Id"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->updateOne("commande", $id,  $champsCommande);
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->updateOne( "commandedocument", $id, $champsCommandeDocument);
     }
 
 }
